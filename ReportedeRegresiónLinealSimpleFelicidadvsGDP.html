@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Reporte de Regresión Lineal - Felicidad vs GDP</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 2em auto;
+      max-width: 900px;
+      line-height: 1.6;
+    }
+    h1, h2, h3, h4 {
+      margin-top: 1.2em;
+    }
+    code, pre {
+      background: #f4f4f4;
+      padding: 0.2em 0.4em;
+      font-size: 90%;
+      font-family: Consolas, Monaco, "Andale Mono", "Ubuntu Mono", monospace;
+    }
+    pre {
+      padding: 1em;
+      overflow: auto;
+    }
+    .image-container {
+      text-align: center;
+      margin: 1em 0;
+    }
+    .image-container img {
+      max-width: 80%;
+      height: auto;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-shadow: 2px 2px 8px rgba(0,0,0,0.1);
+    }
+    blockquote {
+      border-left: 4px solid #ccc;
+      padding-left: 1em;
+      color: #555;
+    }
+    .data-result {
+      background-color: #eef;
+      padding: 0.5em;
+      border-radius: 4px;
+      margin: 1em 0;
+    }
+    hr {
+      margin: 2em 0;
+    }
+  </style>
+</head>
+<body>
+
+<h1>Reporte de Regresión Lineal Simple: Felicidad vs GDP</h1>
+
+<p>
+Este reporte presenta un análisis de regresión lineal simple para estudiar la relación entre la
+variable <strong>Felicidad</strong> (escala de 0 a 10) y el <strong>GDP</strong> de varios países, utilizando
+el <em>logaritmo base 10</em> del GDP como variable explicativa.
+</p>
+
+<hr />
+
+<h2>1. Descripción de la fuente de datos</h2>
+
+<p>
+El archivo <strong>"A1.2 Felicidad y GDP.csv"</strong> contiene la siguiente información:
+</p>
+<ul>
+  <li><strong>Pais:</strong> Nombre del país.</li>
+  <li><strong>Felicidad:</strong> Nivel de felicidad reportado, en una escala de 0 a 10.</li>
+  <li><strong>GDP:</strong> Producto Interno Bruto del país.</li>
+</ul>
+
+<p>
+Los datos de felicidad provienen del
+<a href="https://worldhappiness.report/" target="_blank">World Happiness Report</a> (WHR),
+mientras que los datos de GDP se obtuvieron de
+<a href="https://data.worldbank.org/" target="_blank">The World Bank</a>.
+</p>
+
+<hr />
+
+<h2>2. Pasos realizados en el análisis</h2>
+
+<ol>
+  <li><strong>Importación de datos:</strong> Se cargaron los datos con <code>pandas</code> y se ordenaron para mostrar los países con mayor felicidad y, después, con mayor GDP.</li>
+  <li><strong>Transformación a log10(GDP):</strong> Se calculó la columna <code>log_GDP</code> para reducir la escala.</li>
+  <li><strong>Gráfica de dispersión:</strong> Felicidad (eje Y) vs log(GDP) (eje X).</li>
+  <li><strong>Cálculo manual de los coeficientes de la regresión (B<sub>0</sub> y B<sub>1</sub>):</strong> Siguiendo las fórmulas de la regresión lineal simple.</li>
+  <li><strong>RSS:</strong> Cálculo del Residual Sum of Squares.</li>
+  <li><strong>Error estándar e intervalo de confianza de B<sub>1</sub>:</strong> Determinación de la significancia estadística.</li>
+  <li><strong>RSE y R²:</strong> Evaluación de la bondad de ajuste.</li>
+  <li><strong>Verificación con <code>statsmodels</code>:</strong> Uso de <code>OLS</code> para comparar resultados.</li>
+</ol>
+
+<hr />
+
+<h2>3. Código Completo en Python</h2>
+
+<pre><code class="language-python">
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import statsmodels.api as sm
+
+# 1. Importación de datos
+file_path = r"C:\Users\jonat\Downloads\visual\A1.2 Felicidad y GDP.csv"
+data = pd.read_csv(file_path)
+
+# Mostrar top 10 países con mayor felicidad
+data_sorted_felicidad = data.sort_values('Felicidad', ascending=False)
+print("Top 10 países con mayor felicidad:")
+print(data_sorted_felicidad.head(10))
+
+# Mostrar top 10 países con mayor GDP
+data_sorted_gdp = data.sort_values('GDP', ascending=False)
+print("\nTop 10 países con mayor GDP:")
+print(data_sorted_gdp.head(10))
+
+# 2. Transformación GDP -> log10(GDP)
+data['log_GDP'] = np.log10(data['GDP'])
+
+# Gráfica de dispersión: Felicidad vs log(GDP)
+plt.scatter(data['log_GDP'], data['Felicidad'], alpha=0.75)
+plt.xlabel('Logaritmo base 10 del GDP')
+plt.ylabel('Felicidad')
+plt.title('Relación entre Felicidad y Log(GDP)')
+plt.show()
+
+# 3. Cálculo manual de coeficientes
+X = data['log_GDP']
+Y = data['Felicidad']
+n = len(X)
+
+B1 = (n * np.sum(X*Y) - np.sum(X)*np.sum(Y)) / (n*np.sum(X**2) - (np.sum(X))**2)
+B0 = np.mean(Y) - B1 * np.mean(X)
+
+print("\nCoefficients (Manual Calculation):")
+print("B0 (Intercept) =", B0)
+print("B1 (Slope)     =", B1)
+
+# 4. Gráfica con la línea de regresión
+plt.scatter(X, Y, alpha=0.75, label='Observaciones')
+plt.plot(X, B0 + B1 * X, color='red', alpha=0.75, label='Línea de regresión')
+plt.xlabel('Logaritmo base 10 del GDP')
+plt.ylabel('Felicidad')
+plt.title('Regresión Lineal: Felicidad vs Log(GDP)')
+plt.legend()
+plt.show()
+
+# 5. Cálculo de RSS
+Y_pred = B0 + B1 * X
+RSS = np.sum((Y - Y_pred)**2)
+print("\nResidual Sum of Squares (RSS):", RSS)
+
+# 6. Error estándar e intervalo de confianza de B1
+SE_B1 = np.sqrt(RSS/(n-2)) / np.sqrt(np.sum((X - np.mean(X))**2))
+t_value = 2.042  # Aproximado para 95% de confianza
+CI_B1 = (B1 - t_value*SE_B1, B1 + t_value*SE_B1)
+print("Standard Error of B1 (SE_B1):", SE_B1)
+print("95% Confidence Interval for B1:", CI_B1)
+
+# Verificación de significancia aproximada por intervalo de confianza
+if CI_B1[0] > 0 and CI_B1[1] > 0:
+    print("El intervalo de confianza está por encima de 0 -> asociación positiva y significativa.")
+elif CI_B1[0] < 0 and CI_B1[1] < 0:
+    print("El intervalo de confianza está por debajo de 0 -> asociación negativa y significativa.")
+else:
+    print("El intervalo de confianza incluye 0 -> no hay significancia estadística.")
+
+# 7. Calcular RSE y R²
+RSE = np.sqrt(RSS/(n-2))
+TSS = np.sum((Y - np.mean(Y))**2)
+R2 = 1 - (RSS / TSS)
+
+print("Residual Standard Error (RSE):", RSE)
+print("R² (Coefficient of Determination):", R2)
+print("Interpretación: Aproximadamente un", round(R2*100,2), 
+      "% de la variabilidad en Felicidad es explicada por log(GDP).")
+
+# 8. Verificación con statsmodels OLS
+X_sm = sm.add_constant(X)  # Agregar término constante
+model = sm.OLS(Y, X_sm).fit()
+
+print("\nStatsmodels Regression Summary:")
+print(model.summary())
+
+# Imprimir más detalles de p-value y RSE
+print("p-values:", model.pvalues)
+print("RSE from statsmodels:", np.sqrt(model.scale))
+</code></pre>
+
+<hr />
+
+<h2>4. Gráficas</h2>
+
+<p>
+Durante la ejecución del script anterior, se generan dos figuras principales (en tu caso se guardaron como archivos):
+</p>
+
+<div class="image-container">
+  <p><em>Figura 1:</em> Relación entre Felicidad y Log(GDP) (Dispersión)</p>
+  <img src="Figure_1_Relacion_Felicidad_y_LogGDP.png" 
+       alt="Gráfica de dispersión Felicidad vs Log(GDP)">
+</div>
+
+<div class="image-container">
+  <p><em>Figura 2:</em> Regresión Lineal Ajustada</p>
+  <img src="Figure_1_REGLIN_Relacion_Felicidad_y_LogGDP.png" 
+       alt="Gráfica de regresión Felicidad vs Log(GDP)">
+</div>
+
+<hr />
+
+<h2>5. Resultados obtenidos</h2>
+
+<div class="data-result">
+<ul>
+  <li><strong>B<sub>0</sub> (Intercept):</strong> -1.30235</li>
+  <li><strong>B<sub>1</sub> (Slope):</strong> 0.62813</li>
+  <li><strong>RSS:</strong> 131.3738</li>
+  <li><strong>IC 95% de B<sub>1</sub>:</strong> [0.42427, 0.83199]</li>
+  <li><strong>RSE:</strong> 0.97218</li>
+  <li><strong>R²:</strong> 0.22166 ~ 22%</li>
+  <li><strong>p-value de B<sub>1</sub>:</strong> 3.8257e-09 (significativo)</li>
+</ul>
+</div>
+
+<hr />
+
+<h2>6. Interpretación</h2>
+
+<blockquote>
+  <p>
+    El coeficiente <strong>B<sub>1</sub> = 0.628</strong> sugiere que por cada unidad en la que aumente 
+    el <em>log(GDP)</em>, la felicidad aumenta en aproximadamente 0.63 puntos (en promedio). 
+    El <strong>p-value</strong> muy bajo confirma que esta relación es <strong>estadísticamente significativa</strong> 
+    bajo un nivel de confianza del 95%.
+  </p>
+  <p>
+    <strong>R² = 0.22</strong> indica que cerca del 22% de la variabilidad en el nivel de felicidad 
+    de los países se explica por log(GDP). Aunque la relación es significativa, es claro que 
+    la felicidad depende de otros factores adicionales (salud, educación, redes de apoyo, etc.).
+  </p>
+</blockquote>
+
+<hr />
+
+<h2>7. Conclusiones</h2>
+
+<p>
+El GDP (en escala logarítmica) presenta una asociación positiva y significativa con la felicidad 
+nacional. Sin embargo, dado que el <strong>R²</strong> no es particularmente alto, se recomienda 
+incluir variables adicionales para <strong>enriquecer el modelo</strong> y explicar mejor la 
+variabilidad en la felicidad de los países.
+</p>
+
+<hr />
+
+<footer>
+  <p><em>Reporte generado el: 26 de enero de 2025</em></p>
+</footer>
+
+</body>
+</html>
